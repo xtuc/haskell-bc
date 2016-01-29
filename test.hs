@@ -1,36 +1,39 @@
-data Expression = Expression String | Math
+-- Mathematical operations,
+-- in Haskell they don't have a given type. They are expremied as classic fonctions
+data PLUS = (+)
+data SUB = (-)
+data DIVIDE = (/)
+data MULT = (*)
+--data OPEN_BRACKET = Char
+--data CLOSE_BRACKET = Char
 
-expression :: Char -> Expression
-expression c
-    | c == '*' = "fois"
-    | otherwise = [c]
+data Operation = PLUS | SUB | DIVIDE | MULT
+data Element = Char
+data Token = Operation | Element | Null
+data ComputedResult = Maybe String deriving Show
 
---data ComputedResult = String
---data ComputedResult = string | Error
+-- Parse DSL into tokens
+tokenize :: Char -> Token
+tokenize c
+    | c == '*' = MULT
+    | c == '+' = PLUS
+    | otherwise = c
 
---compute (s:xs) = s ++ compute xs
---compute [] = ""
+--toNum :: String -> Num
+--toNum x = read x :: Num
 
 interpreter :: IO String -> IO String
 interpreter s = fmap (compute . parse) s
 
--- Should be better with guards
---parse :: [Char] -> String
---parse ('*':xs) = "fois" ++ parse xs
---parse ('+':xs) = "plus" ++ parse xs
---parse (x:xs) = [x] ++ parse xs
---parse _ = ""
-
-parse :: String -> [String]
-parse x = foldl (\acc e -> expression e : acc) [] [x]
-
+parse :: String -> [Token]
+parse x = foldl (\acc e -> fmap (tokenize) e : acc) [] [x]
 
 -- Used to filter input, we don't want chars in computing process
 --isIntegral :: _ -> Bool
---isIntegral ( _) = True
+--isIntegral (Num _) = True
 --isIntegral _ = False
 
-compute :: [String] -> String
+compute :: [Token] -> String
 compute a = "Computed: " ++ foldr (++) "" a
 
 main :: IO ()
@@ -38,7 +41,3 @@ main = do
     result <- interpreter getLine
     putStrLn result
     main
-
---exp = exp ope exp | elm 
---ope = * / - +
---elm = 1-9
