@@ -1,5 +1,11 @@
 module Main where
 
+-- +---+---+---+---+---+---+---+--+
+-- |   |   |   | x |   |   |   |  |
+-- |   | + |   |   |   | + |   |  |
+-- | 1 |   | 2 |   | 1 |   | 3 |  |
+-- +---+---+---+---+---+---+---+--+
+
 -- Mathematical operations,
 -- in Haskell they don't have a given type. They are expremied as standart fonctions
 data PLUS = (+)
@@ -11,11 +17,9 @@ data MULT = (*)
 
 data Operation = PLUS | SUB | DIVIDE | MULT | Null deriving (Show, Eq)
 
---data Token = Operation | Element | Null deriving Eq
 data ComputedResult = Maybe String deriving (Read)
 
-data Token = Token { x :: Integer, o :: Operation } deriving (Show)
-data AST = List[Token] | AST
+data Token = Token { x :: Integer, o :: Operation } deriving (Show, Eq)
 
 -- Parse DSL into tokens
 tokenize :: Char -> Token
@@ -25,9 +29,6 @@ tokenize c
     | c == '*' = Token 0 MULT
     | c == '/' = Token 0 DIVIDE
     | otherwise = Token (toNum c) Null
-
---toAst :: [Token] -> AST
---toAst x = foldl (\acc e -> e : acc) [] x
 
 toNum :: Char -> Integer
 toNum x = read [x] :: Integer
@@ -48,9 +49,15 @@ tokenToString (Token x Null) = show x :: String
 tokenToString (Token _ x) = show x :: String
 
 compute :: [Token] -> String
-compute x = foldl (\acc e -> tokenToString e ++ "\n" ++ acc) "" x
-
---doCompute :: 
+compute tokens = do
+    let ast = []
+    _ <- fmap (\el -> do
+                if tokenToString el == "MULT" then
+                    el : ast
+                else
+                    ast) tokens
+    ""
+    --foldl (\acc e -> tokenToString e ++ "\n" ++ acc) "" tokens
 
 main :: IO ()
 main = do
