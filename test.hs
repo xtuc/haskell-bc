@@ -1,5 +1,7 @@
 module Main where
 
+import Control.Monad
+
 -- +---+---+---+---+---+---+---+--+
 -- |   |   |   | x |   |   |   |  |
 -- |   | + |   |   |   | + |   |  |
@@ -49,18 +51,21 @@ tokenToString (Token x Null) = show x :: String
 tokenToString (Token _ x) = show x :: String
 
 compute :: [Token] -> String
-compute tokens = do
-    let ast = []
-    _ <- fmap (\el -> do
-                if tokenToString el == "MULT" then
-                    el : ast
-                else
-                    ast) tokens
-    ""
-    --foldl (\acc e -> tokenToString e ++ "\n" ++ acc) "" tokens
+compute tokens = foldl (\acc e -> tokenToString e ++ "\n" ++ acc) "" tokens
+--compute tokens = do
+--    let ast = []
+--    _ <- fmap (\el -> do
+--                if tokenToString el == "MULT" then
+--                    el : ast
+--                else
+--                    ast) tokens
+--    ""
+    
 
 main :: IO ()
 main = do
+    putStr "BC\n"
+    forever $ do
+    putStr "> "
     result <- interpreter getLine
     putStrLn result
-    main
