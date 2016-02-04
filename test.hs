@@ -17,6 +17,14 @@ data MULT = (*)
 --data OPEN_BRACKET = Char
 --data CLOSE_BRACKET = Char
 
+langDef :: Token.LanguageDef ()
+langDef = Token.LanguageDef {
+    Token.plus = "+",
+    Token.sub = "-",
+    Token.devide = "/",
+    Token.mult = "*"
+}
+
 data Operation = PLUS | SUB | DIVIDE | MULT | Null deriving (Show, Eq)
 
 data ComputedResult = Maybe String deriving (Read)
@@ -61,6 +69,8 @@ compute tokens = foldl (\acc e -> tokenToString e ++ "\n" ++ acc) "" tokens
 --                    ast) tokens
 --    ""
     
+lexer :: Tok.TokenParser ()
+lexer = Tok.makeTokenParser langDef
 
 main :: IO ()
 main = do
