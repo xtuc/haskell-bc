@@ -16,15 +16,12 @@ import Control.Monad
 -- Console utilities
 import System.Console.Haskeline
 
-data Expr = Tr
-          | Plus Expr Expr
+data Expr = Plus Expr Expr
           | Sub Expr Expr
           | Devide Expr Expr
           | Mult Expr Expr
           | Zero
-          | IsZero Expr
-          | Succ Expr
-          | Integer
+          | Num Integer
           | Double
           | String
           deriving (Read, Show)
@@ -43,19 +40,11 @@ toString :: Expr -> String
 toString (Plus l r) = "(+ " ++ toString l ++ " " ++ toString r ++ ")"
 toString x = show x
 
-isInteger s = case reads s :: [(Integer, String)] of
-  [(_, "")] -> True
-  _         -> False
- 
-isDouble s = case reads s :: [(Double, String)] of
-  [(_, "")] -> True
-  _         -> False
- 
---isNumeric :: String -> Bool
-isNumeric s = isInteger s || isDouble s
-
 toExpr :: String -> Expr
 toExpr x = read x :: Expr
+
+intToExpr :: Integer -> Expr
+intToExpr x = Num x
 
 lexer :: Token.TokenParser ()
 lexer = Token.makeTokenParser emptyDef
@@ -101,7 +90,7 @@ psTerm = do
 psFactor = 
             (do {
                 obj <- number;
-                return (toExpr obj)
+                return (intToExpr obj)
             })
             <|>
             (do {
