@@ -24,28 +24,32 @@ data Expr = Plus Expr Expr
           | Mult Expr Expr
           | Zero
           | Num Integer
-          | Double
-          | String
-          deriving (Read, Show)
+          | String String
+          deriving (Read, Show, Eq)
 
 toString :: Expr -> String
 toString (Plus l r) = "(+ " ++ toString l ++ " " ++ toString r ++ ")"
+toString (Sub l r) = "(- " ++ toString l ++ " " ++ toString r ++ ")"
+toString (Devide l r) = "(/ " ++ toString l ++ " " ++ toString r ++ ")"
+toString (Mult l r) = "(* " ++ toString l ++ " " ++ toString r ++ ")"
 toString x = show x
 
-toExpr :: String -> Expr
-toExpr x = read x :: Expr
+stringToExpr :: String -> Expr
+stringToExpr x = read x :: Expr
+
+symbol x = Token.symbol lexer x
+number = Token.natural lexer
+ident = Token.identifier lexer
 
 lexer :: Token.TokenParser ()
 lexer = Token.makeTokenParser emptyDef
 
-symbol = Token.symbol lexer
-number = Token.natural lexer
-ident = Token.identifier lexer
-
+parseInfix :: Parser Expr
 parseInfix = do
               exp <- psExp
               return exp
 
+psExp :: Parser Expr
 psExp = do
             left <- psTerm
             exp <- psExpStar left
@@ -76,13 +80,15 @@ psTermStar left = parseOperation '*' left
                     <|> parseOperation '/' left
                     <|> return left
 
+psTerm :: Parser Expr
 psTerm = do
             left <- psFactor
             exp <- psTermStar left
             return exp
 
 -- Parse all the stuffs
-psFactor = 
+psFactor :: Parser Expr
+psFactor =
             (do {
                 obj <- number;
                 return (Num obj)
@@ -90,7 +96,7 @@ psFactor =
             <|>
             (do {
                 obj <- ident;
-                return (toExpr obj)
+                return (String obj)
             })
             <|>
             (do {
@@ -100,11 +106,24 @@ psFactor =
                 return obj
             })
 
-convertI2S :: String -> Either ParseError Expr
-convertI2S x = parse parseInfix "i2s" x
+parseExpr :: String -> Either ParseError Expr
+parseExpr x = parse parseInfix "<stdin>" x
 
---interpreter :: IO String -> IO String
---interpreter x = convertI2S x
+process :: String -> IO ()
+process line = do
+  let res = parseExpr line
+  case res of
+    Left err -> print err
+    Right ex -> case ex of
+      --Nothing -> putStrLn "Cannot evaluate"
+      --Just result -> putStrLn result
+      result -> putStrLn $ toString result
 
---main :: IO ()
---main = interpreter $ getInputLine "> "
+main :: IO ()
+main = runInputT defaultSettings loop
+  where
+  loop = do
+    result <- getInputLine "> "
+    case result of
+      Nothing -> outputStrLn "Goodbye."
+      Just result -> (liftIO $ process result) >> loop

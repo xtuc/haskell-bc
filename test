@@ -1,1 +1,2 @@
-convertI2S "1 + 1 - 1 / 5 * 5 + ( 5 * 5 )"
+parseExpr "1+1-1/5*5+(5*5)"
+parseExpr "1+1-1/5*5"
