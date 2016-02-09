@@ -6,14 +6,8 @@ import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as Token
 import Text.ParserCombinators.Parsec.Language
 
-import Text.PrettyPrint (Doc, (<>), (<+>))
-import qualified Text.PrettyPrint as PP
-
 --LiftIO
 import Control.Monad.Trans
-
---Forever
-import Control.Monad
 
 -- Console utilities
 import System.Console.Haskeline
@@ -25,17 +19,26 @@ data Expr = Plus Expr Expr
           | Zero
           | Num Integer
           | String String
+          | EvalError Expr
           deriving (Read, Show, Eq)
 
 toString :: Expr -> String
-toString (Plus l r) = "(+ " ++ toString l ++ " " ++ toString r ++ ")"
-toString (Sub l r) = "(- " ++ toString l ++ " " ++ toString r ++ ")"
-toString (Devide l r) = "(/ " ++ toString l ++ " " ++ toString r ++ ")"
-toString (Mult l r) = "(* " ++ toString l ++ " " ++ toString r ++ ")"
+toString (Plus l r) = "(+ " ++ toString l ++ ", " ++ toString r ++ ")"
+toString (Sub l r) = "(- " ++ toString l ++ ", " ++ toString r ++ ")"
+toString (Devide l r) = "(/ " ++ toString l ++ ", " ++ toString r ++ ")"
+toString (Mult l r) = "(* " ++ toString l ++ ", " ++ toString r ++ ")"
+toString (Num x) = show x
+toString (EvalError x) = "Illegal expression " ++ toString x
 toString x = show x
 
-stringToExpr :: String -> Expr
-stringToExpr x = read x :: Expr
+eval :: Expr -> Expr
+eval (Plus (Num l) (Num r)) = Num $ l + r
+eval (Plus l r) = do
+                    case (l, r) of
+                      (l, Num r) -> (Plus (eval l) (Num r))
+                      (Num l, r) -> (Plus (Num l) (eval r))
+                      (l, r) -> (Plus (eval l) (eval r))
+eval x = EvalError x
 
 symbol x = Token.symbol lexer x
 number = Token.natural lexer
@@ -55,29 +58,30 @@ psExp = do
             exp <- psExpStar left
             return exp
 
-createExpr :: Char -> Expr -> Expr -> Expr
-createExpr '+' l r = Plus l r
-createExpr '-' l r = Sub l r
-createExpr '/' l r = Devide l r
-createExpr '*' l r = Mult l r
-createExpr _ l r = Zero
+toExpr :: Char -> Expr -> Expr -> Expr
+toExpr '+' l r = Plus l r
+toExpr '-' l r = Sub l r
+toExpr '/' l r = Devide l r
+toExpr '*' l r = Mult l r
+toExpr _ l r = Zero
 
 --Parse calcul
 parseOperation :: Char -> Expr -> Parser Expr
 parseOperation op l = do
                             symbol [op]
                             r <- psFactor
-                            append <- psTermStar $ createExpr op l r
+                            append <- psTermStar $ toExpr op l r
                             return append
-
-psExpStar :: Expr -> Parser Expr
-psExpStar left = parseOperation '+' left
-                    <|> parseOperation '-' left
-                    <|> return left
 
 psTermStar :: Expr -> Parser Expr
 psTermStar left = parseOperation '*' left
                     <|> parseOperation '/' left
+                    <|> psExpStar left
+                    <|> return left
+
+psExpStar :: Expr -> Parser Expr
+psExpStar left = parseOperation '+' left
+                    <|> parseOperation '-' left
                     <|> return left
 
 psTerm :: Parser Expr
@@ -86,7 +90,7 @@ psTerm = do
             exp <- psTermStar left
             return exp
 
--- Parse all the stuffs
+-- Parse all the stuff
 psFactor :: Parser Expr
 psFactor =
             (do {
@@ -114,9 +118,9 @@ process line = do
   let res = parseExpr line
   case res of
     Left err -> print err
-    Right ex -> case ex of
+    Right ex -> case eval ex of
       --Nothing -> putStrLn "Cannot evaluate"
-      --Just result -> putStrLn result
+      --Just result -> putStrLn $ toString result
       result -> putStrLn $ toString result
 
 main :: IO ()
