@@ -17,8 +17,8 @@ data Expr = Plus Expr Expr
           | Devide Expr Expr
           | Mult Expr Expr
           | Zero
-          | Num Integer
           | String String
+          | Numeric Integer
           | EvalError Expr
           deriving (Read, Show, Eq)
 
@@ -27,18 +27,25 @@ toString (Plus l r) = "(+ " ++ toString l ++ ", " ++ toString r ++ ")"
 toString (Sub l r) = "(- " ++ toString l ++ ", " ++ toString r ++ ")"
 toString (Devide l r) = "(/ " ++ toString l ++ ", " ++ toString r ++ ")"
 toString (Mult l r) = "(* " ++ toString l ++ ", " ++ toString r ++ ")"
-toString (Num x) = show x
+--toString (Num x) = show x
+toString (Numeric x) = show x
 toString (EvalError x) = "Illegal expression " ++ toString x
 toString x = show x
 
-eval :: Expr -> Expr
-eval (Plus (Num l) (Num r)) = Num $ l + r
-eval (Plus l r) = do
-                    case (l, r) of
-                      (l, Num r) -> (Plus (eval l) (Num r))
-                      (Num l, r) -> (Plus (Num l) (eval r))
-                      (l, r) -> (Plus (eval l) (eval r))
-eval x = EvalError x
+integerToExpr :: Integer -> Expr
+integerToExpr x = Numeric x
+
+-- TODO: return a monad instead of an integer
+-- If current evaluation is not possible, 0 is returned
+eval :: Expr -> Integer
+eval ex = case ex of
+  Mult l r -> eval l * eval r
+  Plus l r -> eval l + eval r
+  Sub l r -> eval l - eval r
+  --Devide l r -> eval l / eval r
+  Numeric n   -> n
+  Zero -> 0
+  _ -> 0
 
 symbol x = Token.symbol lexer x
 number = Token.natural lexer
@@ -95,7 +102,7 @@ psFactor :: Parser Expr
 psFactor =
             (do {
                 obj <- number;
-                return (Num obj)
+                return (Numeric obj)
             })
             <|>
             (do {
@@ -121,7 +128,7 @@ process line = do
     Right ex -> case eval ex of
       --Nothing -> putStrLn "Cannot evaluate"
       --Just result -> putStrLn $ toString result
-      result -> putStrLn $ toString result
+      result -> putStrLn $ toString $ integerToExpr result
 
 main :: IO ()
 main = runInputT defaultSettings loop
