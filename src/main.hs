@@ -18,9 +18,15 @@ data Expr = Plus Expr Expr
           | Mult Expr Expr
           | Zero
           | String String
+          | PI
+          | Fn String Expr
+          | Var Expr
           | Numeric Integer
           | EvalError Expr
           deriving (Read, Show, Eq)
+
+-- π
+varPI = 3 
 
 toString :: Expr -> String
 toString (Plus l r) = "(+ " ++ toString l ++ ", " ++ toString r ++ ")"
@@ -30,10 +36,23 @@ toString (Mult l r) = "(* " ++ toString l ++ ", " ++ toString r ++ ")"
 --toString (Num x) = show x
 toString (Numeric x) = show x
 toString (EvalError x) = "Illegal expression " ++ toString x
+toString (Fn fn expr) = "fn(" ++ toString expr ++ ")"
+toString (Var x) = toString x ++ "()"
 toString x = show x
 
 integerToExpr :: Integer -> Expr
 integerToExpr x = Numeric x
+
+fn :: String -> Expr -> Integer
+fn name expr
+            | name == "double" = eval $ Mult expr (Numeric 2)
+            | otherwise = 0
+
+var :: Expr -> Integer
+var (String x)
+            | x == "pi" = varPI
+            | x == "\960" = varPI
+            | otherwise = 0
 
 -- TODO: return a monad instead of an integer
 -- If current evaluation is not possible, 0 is returned
@@ -42,6 +61,8 @@ eval ex = case ex of
   Mult l r -> eval l * eval r
   Plus l r -> eval l + eval r
   Sub l r -> eval l - eval r
+  Var x -> var x
+  Fn n x -> fn n x
   --Devide l r -> eval l / eval r
   Numeric n   -> n
   Zero -> 0
@@ -106,8 +127,16 @@ psFactor =
             })
             <|>
             (do {
+                fn <- ident;
+                symbol "(";
+                obj <- psExp;
+                symbol ")";
+                return (Fn fn obj)
+            })
+            <|>
+            (do {
                 obj <- ident;
-                return (String obj)
+                return (Var $ String obj)
             })
             <|>
             (do {
